@@ -20,6 +20,7 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
         model = models.resnet18(pretrained=True)
         for param in model.parameters():
             param.requires_grad = False
+        print("Pretrained model is loaded")
     else:
         model = models.resnet18(pretrained=False)
 
@@ -27,14 +28,15 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
         os.makedirs(log_dir)
     model_path = os.path.join(log_dir, 'model.pkl')
     if os.path.exists(model_path):
-        if pretrained:
-            print("pretrained parameters would be overwritten by {}".format(model_path))
         model = model.load_state_dict(torch.load(model_path))
+        if pretrained:
+            print("Pretrained parameters would be overwritten by {}".format(model_path))
+        else:
+            print("Model parameters is loaded from {}".format(model_path))
 
-    dataloaders = {
-        'train': DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=16, drop_last=True),
-        'val': DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=16, drop_last=True),
-    }
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
+    eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
+
     log_step_interval = 100
     num_of_classes = train_dataset.get_num_of_classes()
 
@@ -51,71 +53,73 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
 
     since = time.time()
 
-    writer = SummaryWriter(log_dir)    # tensorboard writer
+    writer = SummaryWriter(log_dir)  # tensorboard writer
     best_model_wts = copy.deepcopy(model.state_dict())
     best_accu = 0.0
 
     for epoch in range(num_epochs):
-        # Each epoch has a training and validation phase
-        for phase in ['train', 'val']:
-            if phase == 'train':
-                model.train()  # Set model to training mode
-            else:
-                model.eval()  # Set model to evaluate mode
+        model.train()
 
-            # Iterate over data.
-            running_loss, running_corrects, total = 0, 0, 0
-            p_bar = tqdm(total=len(dataloaders[phase]))
+        running_loss, running_corrects, total = 0, 0, 0
+        p_bar = tqdm(total=len(train_dataloader))
+        for step, (inputs, labels) in enumerate(train_dataloader):
+            inputs, labels = inputs.to(device), labels.to(device)
+            # zero the parameter gradients
+            optimizer.zero_grad()
+            # forward, track history if only in train
+            with torch.set_grad_enabled(True):
+                outputs = model(inputs)
+                _, preds = torch.max(outputs, 1)
+                loss = criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
+            # statistics
+            total += inputs.size(0)
+            running_loss += loss.item() * inputs.size(0)
+            running_corrects += torch.sum(preds == labels.data)
+            _loss = float(running_loss) / total
+            _accu = float(running_corrects) / total * 100
 
-            for step, (inputs, labels) in enumerate(dataloaders[phase]):
-                inputs, labels = inputs.to(device), labels.to(device)
-                # zero the parameter gradients
-                optimizer.zero_grad()
-                # forward, track history if only in train
-                with torch.set_grad_enabled(phase == 'train'):
-                    outputs = model(inputs)
-                    _, preds = torch.max(outputs, 1)
-                    loss = criterion(outputs, labels)
+            p_bar.set_description('[TRAIN on Epoch #{:d} Loss: {:.4f} Acc: {:.2f}%]'.format(epoch + 1, _loss, _accu))
+            if (step + 1) % log_step_interval == 0:
+                global_step = epoch * len(train_dataloader) + step
+                writer.add_scalar('data/train_loss', _loss, global_step)
+                writer.add_scalar('data/train_accu', _accu, global_step)
+            p_bar.update(1)
+        p_bar.close()
+        scheduler.step(epoch=None)
 
-                    # backward + optimize only if in training phase
-                    if phase == 'train':
-                        loss.backward()
-                        optimizer.step()
-                # statistics
-                total += inputs.size(0)
-                running_loss += loss.item() * inputs.size(0)
-                running_corrects += torch.sum(preds == labels.data)
-                _loss = float(running_loss) / total
-                _accu = float(running_corrects) / total * 100
+        running_loss, running_corrects, total = 0, 0, 0
+        p_bar = tqdm(total=len(eval_dataloader))
+        for step, (inputs, labels) in enumerate(eval_dataloader):
+            inputs, labels = inputs.to(device), labels.to(device)
+            with torch.set_grad_enabled(False):
+                outputs = model(inputs)
+                _, preds = torch.max(outputs, 1)
+                loss = criterion(outputs, labels)
+            # statistics
+            total += inputs.size(0)
+            running_loss += loss.item() * inputs.size(0)
+            running_corrects += torch.sum(preds == labels.data)
+            _loss = float(running_loss) / total
+            _accu = float(running_corrects) / total * 100
 
-                p_bar.set_description('[{} on Epoch #{:d} Loss: {:.4f} Acc: {:.2f}%]'.format(
-                    phase, epoch + 1, _loss, _accu))
-                if (step + 1) % log_step_interval == 0:
-                    if phase == 'train':
-                        global_step = epoch * len(dataloaders['train']) + step
-                        writer.add_scalar('data/train_loss', _loss, global_step)
-                        writer.add_scalar('data/train_accu', _accu, global_step)
-                p_bar.update(1)
-            p_bar.close()
+            p_bar.set_description('[EVAL on Epoch #{:d} Loss: {:.4f} Acc: {:.2f}%]'.format(epoch + 1, _loss, _accu))
+            p_bar.update(1)
+        p_bar.close()
+        epoch_loss = float(running_loss) / total
+        epoch_accu = float(running_corrects) / total * 100
 
-            epoch_loss = float(running_loss) / total
-            epoch_accu = float(running_corrects) / total * 100
+        writer.add_scalar('data/val_loss', epoch_loss, epoch)
+        writer.add_scalar('data/val_accu', epoch_accu, epoch)
 
-            if phase == 'train':
-                scheduler.step(epoch=None)
-            else:
-                writer.add_scalar('data/val_loss', epoch_loss, epoch)
-                writer.add_scalar('data/val_accu', epoch_accu, epoch)
+        print('EVAL Loss: {:.4f} Acc: {:.2f}%'.format(epoch_loss, epoch_accu))
 
-            print('{} Loss: {:.4f} Acc: {:.2f}%'.format(
-                phase, epoch_loss, epoch_accu))
-
-            # deep copy the model
-            if phase == 'val' and epoch_accu > best_accu:
-                best_accu = epoch_accu
-                best_model_wts = copy.deepcopy(model.state_dict())
-                torch.save(best_model_wts, model_path)
-
+        # deep copy the model
+        if epoch_accu > best_accu:
+            best_accu = epoch_accu
+            best_model_wts = copy.deepcopy(model.state_dict())
+            torch.save(best_model_wts, model_path)
     writer.close()
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(
@@ -128,7 +132,6 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
 
 
 if __name__ == '__main__':
-    # model_path = '../logs/inception-resnet-v2.h5'
     log_dir = './logs/'
     batch_size = 16  # larger batch_size might cause segmentation fault
     num_epochs = 1000  # Number of epochs to run.
@@ -150,6 +153,5 @@ if __name__ == '__main__':
     train_dataset = RGBD_Dataset('~/vggface3d_sm/train.csv', transform=train_transform)
     eval_dataset = RGBD_Dataset('~/vggface3d_sm/eval.csv', transform=eval_transform)
 
-    model_ft = train_model(train_dataset, eval_dataset, log_dir=log_dir,
-                           num_epochs=num_epochs, batch_size=batch_size)
-
+    model = train_model(train_dataset, eval_dataset, log_dir=log_dir,
+                        num_epochs=num_epochs, batch_size=batch_size)
