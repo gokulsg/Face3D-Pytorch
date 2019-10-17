@@ -1,0 +1,10 @@
+logs/
+
+__pycache__/
+
+.ipynb_checkpoints
+
+# PyCharm project setting
+.idea
+
+venv/
