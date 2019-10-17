@@ -15,7 +15,7 @@ from tensorboardX import SummaryWriter
 from dataset import RGBD_Dataset
 
 
-def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', num_epochs=25, batch_size=16):
+def train_model(train_dataset, eval_dataset, pretrained=True, log_dir='./log', num_epochs=25, batch_size=16):
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=16, drop_last=True)
     eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=16, drop_last=True)
     num_of_classes = train_dataset.get_num_of_classes()
