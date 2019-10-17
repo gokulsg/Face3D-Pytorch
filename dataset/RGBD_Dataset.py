@@ -18,8 +18,9 @@ class RGBD_Dataset(Dataset):
         csv_path (string): Path to the csv file with annotations.
         transform (callable, optional): Optional transform to be applied on a sample.
     """
-    def __init__(self, csv_path, transform=None):
-        self.input_channels = 3
+
+    def __init__(self, csv_path, input_channels=3, transform=None):
+        self.input_channels = input_channels
         csv_path = os.path.expanduser(csv_path)
         assert os.path.exists(csv_path), '%s not found' % csv_path
 
@@ -43,33 +44,52 @@ class RGBD_Dataset(Dataset):
         rgb_image_path, dep_image_path, cls_id = self.df.iloc[idx]
         # print(rgb_image_path)
         image = Image.open(rgb_image_path)
+        if self.input_channels == 4:
+            rgb_image = np.asarray(image)
+            dep_image = np.load(dep_image_path)
+            dep_image = np.expand_dims(dep_image, axis=-1)
+            image = np.concatenate((rgb_image, dep_image), axis=-1)
         if self._transform is not None:
             image = self._transform(image)
-        # One-hot encoding
+        # There is no need to transfer into One-hot encoding
         # label = torch.zeros(self._num_of_classes, dtype=torch.long).scatter_(0, torch.from_numpy(np.array(cls_id)), 1)
         # label = (np.arange(self._num_of_classes) == cls_id).astype(np.float32)
-
         return image, cls_id
 
 
 if __name__ == '__main__':
+    """ code below are used for debugging.
+    """
+    from dataset.RGBD_transforms import Resize, RandomHorizontalFlip
     train_transform = transforms.Compose([
-        transforms.RandomResizedCrop(182),
-        transforms.RandomHorizontalFlip(160),
+        Resize(224),
+        RandomHorizontalFlip(),
         transforms.ToTensor(),
     ])
-    valid_transform = transforms.Compose([
-        transforms.Resize(182),
-        transforms.CenterCrop(160),
+    # valid_transform = transforms.Compose([
+    #     Resize(224),
+    #     transforms.ToTensor(),
+    # ])
+    _train_transform = transforms.Compose([
+        transforms.Resize(224),
+        # transforms.RandomResizedCrop(224),
+        # transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
     ])
+    # valid_transform = transforms.Compose([
+    #     transforms.Resize(224),
+    #     # transforms.CenterCrop(224),
+    #     transforms.ToTensor(),
+    # ])
 
-    train_dataset = RGBD_Dataset('~/vggface3d_sm/train.csv', transform=train_transform)
+    train_dataset = RGBD_Dataset('~/vggface3d_sm/train.csv', input_channels=3, transform=train_transform)
+
     train_dataloader = DataLoader(train_dataset, batch_size=4, num_workers=0)
     import time
+
     start = time.time()
     for i, (image, label) in enumerate(train_dataloader):
-        print(i, image, label)
+        print(i, image.shape, label)
         if i >= 1:
             break
     elapsed = (time.time() - start)
