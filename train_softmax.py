@@ -21,12 +21,12 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
     num_of_classes = train_dataset.get_num_of_classes()
 
     if pretrained is True:
-        model = models.resnet34(pretrained=True)
+        model = models.resnet50(pretrained=True)
         for param in model.parameters():
             param.requires_grad = False
         print("Pretrained model is loaded")
     else:
-        model = models.resnet18(pretrained=False)
+        model = models.resnet50(pretrained=False)
     # Parameters of newly constructed modules have requires_grad=True by default
     model.fc = torch.nn.Linear(model.fc.in_features, num_of_classes)
 
