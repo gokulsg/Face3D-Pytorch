@@ -39,7 +39,8 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
             print("Pretrained parameters would be overwritten by {}".format(model_path))
         else:
             print("Model parameters is loaded from {}".format(model_path))
-
+    log_file = os.path.join(log_dir, 'training.log')
+    log_fd = open(log_file, 'w')
     log_step_interval = 100
 
     criterion = torch.nn.CrossEntropyLoss()
@@ -113,7 +114,7 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
         writer.add_scalar('data/val_loss', epoch_loss, epoch)
         writer.add_scalar('data/val_accu', epoch_accu, epoch)
 
-        print('EVAL Loss: {:.4f} Acc: {:.2f}%'.format(epoch_loss, epoch_accu))
+        log_fd.write('EVAL Loss on Epoch {:d}: {:.4f} Acc: {:.2f}%\n'.format(epoch, epoch_loss, epoch_accu))
 
         # deep copy the model
         if epoch_accu > best_accu:
@@ -121,6 +122,7 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
             best_model_wts = copy.deepcopy(model.state_dict())
             torch.save(best_model_wts, model_path)
     writer.close()
+    log_fd.close()
     time_elapsed = time.time() - since
     print('Training complete in {:.0f}m {:.0f}s'.format(
         time_elapsed // 60, time_elapsed % 60))
