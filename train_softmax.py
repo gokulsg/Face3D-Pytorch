@@ -138,17 +138,16 @@ if __name__ == '__main__':
     batch_size = 16  # larger batch_size might cause segmentation fault
     num_epochs = 1000  # Number of epochs to run.
     steps_per_epoch = 2500  # You must specify the `steps_per_epoch` 'cause the training dataset was repeated
-    input_image_size = (182, 182)
-    input_shape = input_image_size + (4,)  # Model input shape
 
     train_transform = transforms.Compose([
-        transforms.RandomResizedCrop(182),
-        transforms.RandomHorizontalFlip(160),
+        transforms.Resize(224),
+        # transforms.RandomResizedCrop(224),
+        transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
     ])
     eval_transform = transforms.Compose([
-        transforms.Resize(182),
-        transforms.CenterCrop(160),
+        transforms.Resize(224),
+        # transforms.CenterCrop(224),
         transforms.ToTensor(),
     ])
 
