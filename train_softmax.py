@@ -22,13 +22,22 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
 
     if pretrained is True:
         model = models.resnet50(pretrained=True)
-        for param in model.parameters():
-            param.requires_grad = False
+        # for param in model.parameters():
+        #     param.requires_grad = False
         print("Pretrained model is loaded")
     else:
         model = models.resnet50(pretrained=False)
     # Parameters of newly constructed modules have requires_grad=True by default
     model.fc = torch.nn.Linear(model.fc.in_features, num_of_classes)
+
+    criterion = torch.nn.CrossEntropyLoss()
+    # Observe that only parameters of final layer are being optimized as opposed to before.
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+    # Decay LR by a factor of 0.1 every 7 epochs
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
 
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
@@ -42,15 +51,6 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
     log_file = os.path.join(log_dir, 'training.log')
     log_fd = open(log_file, 'w')
     log_step_interval = 100
-
-    criterion = torch.nn.CrossEntropyLoss()
-    # Observe that only parameters of final layer are being optimized as opposed to before.
-    optimizer = torch.optim.SGD(model.fc.parameters(), lr=0.001, momentum=0.9)
-    # Decay LR by a factor of 0.1 every 7 epochs
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
-
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = model.to(device)
 
     since = time.time()
 
