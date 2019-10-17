@@ -16,13 +16,19 @@ from dataset import RGBD_Dataset
 
 
 def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', num_epochs=25, batch_size=16):
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
+    eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
+    num_of_classes = train_dataset.get_num_of_classes()
+
     if pretrained is True:
-        model = models.resnet18(pretrained=True)
+        model = models.resnet34(pretrained=True)
         for param in model.parameters():
             param.requires_grad = False
         print("Pretrained model is loaded")
     else:
         model = models.resnet18(pretrained=False)
+    # Parameters of newly constructed modules have requires_grad=True by default
+    model.fc = torch.nn.Linear(model.fc.in_features, num_of_classes)
 
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
@@ -34,14 +40,8 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
         else:
             print("Model parameters is loaded from {}".format(model_path))
 
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
-    eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
-
     log_step_interval = 100
-    num_of_classes = train_dataset.get_num_of_classes()
 
-    # Parameters of newly constructed modules have requires_grad=True by default
-    model.fc = torch.nn.Linear(model.fc.in_features, num_of_classes)
     criterion = torch.nn.CrossEntropyLoss()
     # Observe that only parameters of final layer are being optimized as opposed to before.
     optimizer = torch.optim.SGD(model.fc.parameters(), lr=0.001, momentum=0.9)
