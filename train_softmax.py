@@ -10,7 +10,6 @@ from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
 from torchvision import transforms, models
-
 from tensorboardX import SummaryWriter
 
 from dataset import RGBD_Dataset
@@ -33,10 +32,10 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
         model = model.load_state_dict(torch.load(model_path))
 
     dataloaders = {
-        'train': DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True),
-        'val': DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True),
+        'train': DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=16, drop_last=True),
+        'val': DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=16, drop_last=True),
     }
-    log_step_interval = 1000
+    log_step_interval = 100
     num_of_classes = train_dataset.get_num_of_classes()
 
     # Parameters of newly constructed modules have requires_grad=True by default
@@ -56,7 +55,7 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
     best_model_wts = copy.deepcopy(model.state_dict())
     best_accu = 0.0
 
-    for epoch in range(1, num_epochs + 1):
+    for epoch in range(num_epochs):
         # Each epoch has a training and validation phase
         for phase in ['train', 'val']:
             if phase == 'train':
@@ -87,10 +86,10 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
                 running_loss += loss.item() * inputs.size(0)
                 running_corrects += torch.sum(preds == labels.data)
                 _loss = float(running_loss) / total
-                _accu = float(running_corrects) / total
+                _accu = float(running_corrects) / total * 100
 
-                p_bar.set_description('[{} on Epoch #{:d} Loss: {:.4f} Acc: {:.4f}]'.format(
-                    phase, epoch, _loss, _accu))
+                p_bar.set_description('[{} on Epoch #{:d} Loss: {:.4f} Acc: {:.2f}%]'.format(
+                    phase, epoch + 1, _loss, _accu))
                 if (step + 1) % log_step_interval == 0:
                     if phase == 'train':
                         global_step = epoch * len(dataloaders['train']) + step
@@ -100,7 +99,7 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
             p_bar.close()
 
             epoch_loss = float(running_loss) / total
-            epoch_accu = float(running_corrects) / total
+            epoch_accu = float(running_corrects) / total * 100
 
             if phase == 'train':
                 scheduler.step(epoch=None)
@@ -108,7 +107,7 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
                 writer.add_scalar('data/val_loss', epoch_loss, epoch)
                 writer.add_scalar('data/val_accu', epoch_accu, epoch)
 
-            print('{} Loss: {:.4f} Acc: {:.4f} '.format(
+            print('{} Loss: {:.4f} Acc: {:.2f}%'.format(
                 phase, epoch_loss, epoch_accu))
 
             # deep copy the model
