@@ -19,8 +19,8 @@ from dataset import Resize, RandomHorizontalFlip
 def train_model(train_dataset, eval_dataset, pretrained=True, log_dir='./log', num_epochs=50, batch_size=16):
     # If you get such a RuntimeError, change the `num_workers=0` instead.
     # RuntimeError: DataLoader worker (pid 83641) is killed by signal: Unknown signal: 0
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
-    eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=16, drop_last=True)
+    eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=16, drop_last=True)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # num_of_classes = train_dataset.get_num_of_classes()
