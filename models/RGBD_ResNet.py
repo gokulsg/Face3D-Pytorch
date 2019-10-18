@@ -7,7 +7,7 @@ from torchvision import models
 
 
 class ResNet50(nn.Module):
-    def __init__(self, in_planes, out_planes, pretrained=False, zero_init_residual=False):
+    def __init__(self, in_planes, out_planes, pretrained=False):
         super(ResNet50, self).__init__()
         if pretrained is True:
             self.model = models.resnet50(pretrained=True)
