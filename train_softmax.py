@@ -23,8 +23,8 @@ def train_model(train_dataset, eval_dataset, pretrained=True, log_dir='./log', n
     eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=16, drop_last=True)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    # num_of_classes = train_dataset.get_num_of_classes()
-    num_of_classes = 1200
+    num_of_classes = train_dataset.get_num_of_classes()
+    # num_of_classes = 1200
 
     if pretrained is True:
         model = models.resnet50(pretrained=True)
