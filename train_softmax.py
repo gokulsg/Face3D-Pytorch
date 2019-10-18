@@ -17,16 +17,7 @@ from dataset import Resize, RandomHorizontalFlip
 
 
 def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', num_epochs=25, batch_size=16):
-    """ Train the model
 
-    :param train_dataset:
-    :param eval_dataset:
-    :param pretrained:
-    :param log_dir:
-    :param num_epochs:
-    :param batch_size:
-    :return: the model of the best accuracy in validation dataset
-    """
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
     eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
     num_of_classes = train_dataset.get_num_of_classes()
@@ -149,16 +140,16 @@ if __name__ == '__main__':
     batch_size = 16  # larger batch_size might cause segmentation fault
     num_epochs = 1000  # Number of epochs to run.
     steps_per_epoch = 2500  # You must specify the `steps_per_epoch` 'cause the training dataset was repeated
-    input_channels = 3
+    input_channels = 4
 
     train_transform = transforms.Compose([
-        transforms.Resize(224),
+        Resize(224),
         # transforms.RandomResizedCrop(224),
         RandomHorizontalFlip(),
         transforms.ToTensor(),
     ])
     eval_transform = transforms.Compose([
-        transforms.Resize(224),
+        Resize(224),
         # transforms.CenterCrop(224),
         transforms.ToTensor(),
     ])
