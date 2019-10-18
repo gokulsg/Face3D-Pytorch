@@ -16,11 +16,15 @@ from dataset import RGBD_Dataset
 from dataset import Resize, RandomHorizontalFlip
 
 
-def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', num_epochs=25, batch_size=16):
-
+def train_model(train_dataset, eval_dataset, pretrained=True, log_dir='./log', num_epochs=50, batch_size=16):
+    # If you get such a RuntimeError, change the `num_workers=0` instead.
+    # RuntimeError: DataLoader worker (pid 83641) is killed by signal: Unknown signal: 0
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
     eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
-    num_of_classes = train_dataset.get_num_of_classes()
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    # num_of_classes = train_dataset.get_num_of_classes()
+    num_of_classes = 1200
 
     if pretrained is True:
         model = models.resnet50(pretrained=True)
@@ -29,8 +33,22 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
         print("Pretrained model is loaded")
     else:
         model = models.resnet50(pretrained=False)
+    if train_dataset.input_channels == 4:
+        model.conv1 = torch.nn.Conv2d(4, 64, kernel_size=7, stride=2, padding=3, bias=False)
     # Parameters of newly constructed modules have requires_grad=True by default
     model.fc = torch.nn.Linear(model.fc.in_features, num_of_classes)
+
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    model_path = os.path.join(log_dir, 'resnet50-3d.pkl')
+
+    if os.path.exists(model_path):
+        model.load_state_dict(torch.load(model_path, map_location=device))
+        # print(torch.load(model_path, map_location=device))
+        if pretrained:
+            print("Pretrained parameters would be overwritten by {}".format(model_path))
+        else:
+            print("Model parameters is loaded from {}".format(model_path))
 
     criterion = torch.nn.CrossEntropyLoss()
     # Observe that only parameters of final layer are being optimized as opposed to before.
@@ -38,20 +56,12 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
     # Decay LR by a factor of 0.1 every 7 epochs
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
 
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-    model_path = os.path.join(log_dir, 'model.pkl')
-    if os.path.exists(model_path):
-        model = model.load_state_dict(torch.load(model_path))
-        if pretrained:
-            print("Pretrained parameters would be overwritten by {}".format(model_path))
-        else:
-            print("Model parameters is loaded from {}".format(model_path))
     log_file = os.path.join(log_dir, 'training.log')
     log_fd = open(log_file, 'w')
+    log_fd.write(f"""| {"epoch":^8s} | {"epoch_loss":^10s} | {"epoch_accu":^10s} """
+                 f"""| {"best_accu":^10s} | {"time_elapsed":^15s} |""")
     log_step_interval = 100
 
     since = time.time()
@@ -67,15 +77,14 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
         p_bar = tqdm(total=len(train_dataloader))
         for step, (inputs, labels) in enumerate(train_dataloader):
             inputs, labels = inputs.to(device), labels.to(device)
-            # zero the parameter gradients
+
             optimizer.zero_grad()
-            # forward, track history if only in train
             with torch.set_grad_enabled(True):
                 outputs = model(inputs)
-                _, preds = torch.max(outputs, 1)
                 loss = criterion(outputs, labels)
                 loss.backward()
                 optimizer.step()
+            _, preds = torch.max(outputs, 1)
             # statistics
             total += inputs.size(0)
             running_loss += loss.item() * inputs.size(0)
@@ -116,13 +125,16 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
         writer.add_scalar('data/val_loss', epoch_loss, epoch)
         writer.add_scalar('data/val_accu', epoch_accu, epoch)
 
-        log_fd.write('EVAL Loss on Epoch {:d}: {:.4f} Acc: {:.2f}%\n'.format(epoch, epoch_loss, epoch_accu))
-
         # deep copy the model
         if epoch_accu > best_accu:
             best_accu = epoch_accu
             best_model_wts = copy.deepcopy(model.state_dict())
             torch.save(best_model_wts, model_path)
+
+        time_elapsed = time.time() - since
+        log_fd.write(f"""| {epoch:8d} | {epoch_loss:10.2f} | {epoch_accu:9.2f}%"""
+                     f"""| {best_accu:9.2f}% | {time_elapsed//60:7.0f} minutes |""")
+
     writer.close()
     log_fd.close()
     time_elapsed = time.time() - since
@@ -138,7 +150,7 @@ def train_model(train_dataset, eval_dataset, pretrained=False, log_dir='./log', 
 if __name__ == '__main__':
     log_dir = './logs/'
     batch_size = 16  # larger batch_size might cause segmentation fault
-    num_epochs = 1000  # Number of epochs to run.
+    num_epochs = 50  # Number of epochs to run.
     steps_per_epoch = 2500  # You must specify the `steps_per_epoch` 'cause the training dataset was repeated
     input_channels = 4
 
