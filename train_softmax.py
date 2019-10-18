@@ -148,10 +148,11 @@ def train_model(train_dataset, eval_dataset, pretrained=True, log_dir='./log', n
 
 
 if __name__ == '__main__':
-    log_dir = './logs/'
+    from datetime import datetime
+    TIMESTAMP = "{0:%m-%d.%H-%M}".format(datetime.now())
+    log_dir = './logs/' + TIMESTAMP
     batch_size = 16  # larger batch_size might cause segmentation fault
     num_epochs = 50  # Number of epochs to run.
-    steps_per_epoch = 2500  # You must specify the `steps_per_epoch` 'cause the training dataset was repeated
     input_channels = 4
 
     train_transform = transforms.Compose([
