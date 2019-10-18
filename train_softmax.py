@@ -9,52 +9,57 @@ from tqdm import tqdm
 
 import torch
 from torch.utils.data import DataLoader
-from torchvision import transforms, models
+from torchvision import transforms
 from tensorboardX import SummaryWriter
 
 from dataset import RGBD_Dataset
 from dataset import Resize, RandomHorizontalFlip
+from models import ResNet50
 
 
-def train_model(train_dataset, eval_dataset, pretrained=True, log_dir='./log', num_epochs=50, batch_size=16):
+def train_model(train_dataset, eval_dataset, num_epochs=50, batch_size=16, log_dir='./log',
+                pretrained_on_imagenet=True,
+                pretrained_model_path=None, pretrained_optim_path=None):
+    r"""Train a Model
+    Args:
+        :param train_dataset: (RGBD_Dataset)
+        :param eval_dataset: (RGBD_Dataset)
+        :param pretrained_on_imagenet: (bool) Whether to load the imagenet pretrained model.
+        :param log_dir: (str) The log directory to save logging files and models.
+        :param num_epochs: (int) Number of times the dataset is traversed.
+        :param batch_size: (int) The size of each step.
+        :param pretrained_model_path: (str)
+        :param pretrained_optim_path: (str)
+        :return: the model of the best accuracy on validation dataset
+    """
     # If you get such a RuntimeError, change the `num_workers=0` instead.
     # RuntimeError: DataLoader worker (pid 83641) is killed by signal: Unknown signal: 0
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=16, drop_last=True)
-    eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=16, drop_last=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
+    eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    num_of_classes = train_dataset.get_num_of_classes()
-    # num_of_classes = 1200
+    # num_of_classes = train_dataset.get_num_of_classes()
+    num_of_classes = 1200
 
-    if pretrained is True:
-        model = models.resnet50(pretrained=True)
-        # for param in model.parameters():
-        #     param.requires_grad = False
-        print("Pretrained model is loaded")
-    else:
-        model = models.resnet50(pretrained=False)
-    if train_dataset.input_channels == 4:
-        model.conv1 = torch.nn.Conv2d(4, 64, kernel_size=7, stride=2, padding=3, bias=False)
-    # Parameters of newly constructed modules have requires_grad=True by default
-    model.fc = torch.nn.Linear(model.fc.in_features, num_of_classes)
-
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-    model_path = os.path.join(log_dir, 'resnet50-3d.pkl')
-
-    if os.path.exists(model_path):
-        model.load_state_dict(torch.load(model_path, map_location=device))
-        # print(torch.load(model_path, map_location=device))
-        if pretrained:
-            print("Pretrained parameters would be overwritten by {}".format(model_path))
-        else:
-            print("Model parameters is loaded from {}".format(model_path))
+    model = ResNet50(train_dataset.input_channels, num_of_classes, pretrained=pretrained_on_imagenet)
 
     criterion = torch.nn.CrossEntropyLoss()
     # Observe that only parameters of final layer are being optimized as opposed to before.
     optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
     # Decay LR by a factor of 0.1 every 7 epochs
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    if (pretrained_model_path is not None) and os.path.exists(pretrained_model_path):
+        model.load_state_dict(torch.load(pretrained_model_path, map_location=device))
+        if pretrained_on_imagenet:
+            print("Pretrained parameters would be overwritten by {}".format(pretrained_model_path))
+        else:
+            print("Model parameters is loaded from {}".format(pretrained_model_path))
+    if (pretrained_optim_path is not None) and os.path.exists(pretrained_optim_path):
+        optimizer.load_state_dict(torch.load(pretrained_optim_path, map_location=device))
 
     model = model.to(device)
 
@@ -69,6 +74,8 @@ def train_model(train_dataset, eval_dataset, pretrained=True, log_dir='./log', n
     writer = SummaryWriter(log_dir)  # tensorboard writer
     best_model_wts = copy.deepcopy(model.state_dict())
     best_accu = 0.0
+    saved_model_path = os.path.join(log_dir, 'resnet50-3d-model.pkl')
+    saved_optim_path = os.path.join(log_dir, 'resnet50-3d-optim.pkl')
 
     for epoch in range(num_epochs):
         model.train()
@@ -129,7 +136,9 @@ def train_model(train_dataset, eval_dataset, pretrained=True, log_dir='./log', n
         if epoch_accu > best_accu:
             best_accu = epoch_accu
             best_model_wts = copy.deepcopy(model.state_dict())
-            torch.save(best_model_wts, model_path)
+            optimizer.state_dict()
+            torch.save(best_model_wts, saved_model_path)
+            torch.save(optimizer, saved_optim_path)
 
         time_elapsed = time.time() - since
         log_fd.write(f"""| {epoch:8d} | {epoch_loss:10.2f} | {epoch_accu:9.2f}%"""
@@ -150,7 +159,7 @@ def train_model(train_dataset, eval_dataset, pretrained=True, log_dir='./log', n
 if __name__ == '__main__':
     from datetime import datetime
     TIMESTAMP = "{0:%m-%d.%H-%M}".format(datetime.now())
-    log_dir = './logs/' + TIMESTAMP
+    log_dir = './tmp/' + TIMESTAMP
     batch_size = 16  # larger batch_size might cause segmentation fault
     num_epochs = 50  # Number of epochs to run.
     input_channels = 4
