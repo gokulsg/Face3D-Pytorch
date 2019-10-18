@@ -108,6 +108,7 @@ def train_model(train_dataset, eval_dataset, num_epochs=50, batch_size=16, log_d
         p_bar.close()
         scheduler.step(epoch=None)
 
+        model.eval()
         running_loss, running_corrects, total = 0, 0, 0
         p_bar = tqdm(total=len(eval_dataloader))
         for step, (inputs, labels) in enumerate(eval_dataloader):
