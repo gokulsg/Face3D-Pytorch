@@ -32,7 +32,7 @@ def evaluation(eval_dataset, batch_size=16, num_of_classes=1200, pretrained_mode
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
 
-    model = ResNet50(eval_dataloader.input_channels, num_of_classes, pretrained=False)
+    model = ResNet50(eval_dataset.input_channels, num_of_classes, pretrained=False)
 
     if os.path.exists(pretrained_model_path):
         model.load_state_dict(torch.load(pretrained_model_path, map_location=device))
