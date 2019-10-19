@@ -2,7 +2,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
+import argparse
 import time
 import copy
 from tqdm import tqdm
@@ -17,31 +18,38 @@ from dataset import Resize, RandomHorizontalFlip
 from models import ResNet50
 
 
-def train_model(train_dataset, eval_dataset, num_epochs=50, batch_size=16, log_dir='./log',
-                pretrained_on_imagenet=True,
+def train_model(train_dataset, eval_dataset, input_channels, num_of_classes,
+                num_of_epochs, batch_size, num_of_workers,
+                log_base_dir, pretrained_on_imagenet=True,
                 pretrained_model_path=None, pretrained_optim_path=None):
     r"""Train a Model
     Args:
         :param train_dataset: (RGBD_Dataset)
         :param eval_dataset: (RGBD_Dataset)
+        :param input_channels: (int)
+        :param num_of_classes: (int)
         :param pretrained_on_imagenet: (bool) Whether to load the imagenet pretrained model.
-        :param log_dir: (str) The log directory to save logging files and models.
-        :param num_epochs: (int) Number of times the dataset is traversed.
-        :param batch_size: (int) The size of each step.
+        :param log_base_dir: (str) The log directory to save logging files and models.
+        :param num_of_epochs: (int) Number of times the dataset is traversed.
+        :param batch_size: (int) The size of each step. large batch_size might cause segmentation fault
+        :param num_of_workers: (int)
         :param pretrained_model_path: (str)
         :param pretrained_optim_path: (str)
         :return: the model of the best accuracy on validation dataset
     """
     # If you get such a RuntimeError, change the `num_workers=0` instead.
     # RuntimeError: DataLoader worker (pid 83641) is killed by signal: Unknown signal: 0
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
-    eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
+    print(num_of_workers)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
+                                  num_workers=num_of_workers, drop_last=True)
+    eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True,
+                                 num_workers=num_of_workers, drop_last=True)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    # num_of_classes = train_dataset.get_num_of_classes()
-    num_of_classes = 1200
+    if num_of_classes is None:
+        num_of_classes = train_dataset.get_num_of_classes()
 
-    model = ResNet50(train_dataset.input_channels, num_of_classes, pretrained=pretrained_on_imagenet)
+    model = ResNet50(input_channels, num_of_classes, pretrained=pretrained_on_imagenet)
 
     criterion = torch.nn.CrossEntropyLoss()
     # Observe that only parameters of final layer are being optimized as opposed to before.
@@ -49,8 +57,8 @@ def train_model(train_dataset, eval_dataset, num_epochs=50, batch_size=16, log_d
     # Decay LR by a factor of 0.1 every 7 epochs
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
 
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
+    if not os.path.exists(log_base_dir):
+        os.makedirs(log_base_dir)
 
     if (pretrained_model_path is not None) and os.path.exists(pretrained_model_path):
         model.load_state_dict(torch.load(pretrained_model_path, map_location=device))
@@ -63,7 +71,7 @@ def train_model(train_dataset, eval_dataset, num_epochs=50, batch_size=16, log_d
 
     model = model.to(device)
 
-    log_file = os.path.join(log_dir, 'training.log')
+    log_file = os.path.join(log_base_dir, 'training.log')
     log_fd = open(log_file, 'w')
     log_fd.write(f"""| {"epoch":^8s} | {"epoch_loss":^10s} | {"epoch_accu":^10s} """
                  f"""| {"best_accu":^10s} | {"time_elapsed":^15s} |""")
@@ -71,13 +79,13 @@ def train_model(train_dataset, eval_dataset, num_epochs=50, batch_size=16, log_d
 
     since = time.time()
 
-    writer = SummaryWriter(log_dir)  # tensorboard writer
+    writer = SummaryWriter(log_base_dir)  # tensorboard writer
     best_model_wts = copy.deepcopy(model.state_dict())
     best_accu = 0.0
-    saved_model_path = os.path.join(log_dir, 'resnet50-3d-model.pkl')
-    saved_optim_path = os.path.join(log_dir, 'resnet50-3d-optim.pkl')
+    saved_model_path = os.path.join(log_base_dir, 'resnet50-3d-model.pkl')
+    saved_optim_path = os.path.join(log_base_dir, 'resnet50-3d-optim.pkl')
 
-    for epoch in range(num_epochs):
+    for epoch in range(num_of_epochs):
         model.train()
 
         running_loss, running_corrects, total = 0, 0, 0
@@ -157,32 +165,64 @@ def train_model(train_dataset, eval_dataset, num_epochs=50, batch_size=16, log_d
     return model
 
 
+def parse_arguments(argv):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--train_dataset_csv', type=str,
+                        help='The path of csv file where to write paths of training images.',
+                        default='~/vggface3d_sm/train.csv')
+    parser.add_argument('--eval_dataset_csv', type=str,
+                        help='The path of csv file where to write paths of validation images.',
+                        default='~/vggface3d_sm/eval.csv')
+    parser.add_argument('--pretrained_on_imagenet',
+                        help='(bool) Whether to load the imagenet pretrained model.', action='store_true')
+    parser.add_argument('--pretrained_model_path', type=str,
+                        help='Load a pretrained model before training starts.')
+    parser.add_argument('--pretrained_optim_path', type=str,
+                        help='Load a optimizer before training starts.')
+    parser.add_argument('--input_channels', type=int,
+                        help='Number of channels of the first input layer.', default=4)
+    parser.add_argument('--num_of_classes', type=int,
+                        help='Number of channels of the last output layer.', default=1200)
+    parser.add_argument('--num_of_epochs', type=int,
+                        help='Number of epochs to run.', default=50)
+    parser.add_argument('--image_size', type=int,
+                        help='Image size (height, width) in pixels.', default=224)
+    parser.add_argument('--batch_size', type=int,
+                        help='Number of images to process in a batch.', default=16)
+    parser.add_argument('--num_of_workers', type=int,
+                        help='Number of subprocesses to use for data loading.', default=0)
+    parser.add_argument('--logs_base_dir', type=str,
+                        help='Directory where to write event logs and save models.', default='~/logs/')
+    return parser.parse_args(argv)
+
+
 if __name__ == '__main__':
+    args = parse_arguments(sys.argv[1:])
     from datetime import datetime
     TIMESTAMP = "{0:%m-%d.%H-%M}".format(datetime.now())
-    log_dir = './tmp/' + TIMESTAMP
-    batch_size = 16  # larger batch_size might cause segmentation fault
-    num_epochs = 50  # Number of epochs to run.
-    input_channels = 4
+    args.logs_base_dir = args.logs_base_dir + TIMESTAMP
 
     train_transform = transforms.Compose([
-        Resize(224),
+        Resize(args.image_size),
         # transforms.RandomResizedCrop(224),
         RandomHorizontalFlip(),
         transforms.ToTensor(),
     ])
     eval_transform = transforms.Compose([
-        Resize(224),
+        Resize(args.image_size),
         # transforms.CenterCrop(224),
         transforms.ToTensor(),
     ])
 
-    train_dataset = RGBD_Dataset('~/vggface3d_sm/train.csv',
-                                 input_channels=input_channels,
+    train_dataset = RGBD_Dataset(args.train_dataset_csv,
+                                 input_channels=args.input_channels,
                                  transform=train_transform)
-    eval_dataset = RGBD_Dataset('~/vggface3d_sm/eval.csv',
-                                input_channels=input_channels,
+    eval_dataset = RGBD_Dataset(args.eval_dataset_csv,
+                                input_channels=args.input_channels,
                                 transform=eval_transform)
 
-    model = train_model(train_dataset, eval_dataset, log_dir=log_dir,
-                        num_epochs=num_epochs, batch_size=batch_size)
+    model = train_model(train_dataset, eval_dataset,
+                        input_channels=args.input_channels, num_of_classes=args.num_of_classes,
+                        num_of_epochs=args.num_of_epochs, batch_size=args.batch_size,
+                        num_of_workers=args.num_of_workers, log_base_dir=args.logs_base_dir,
+                        pretrained_on_imagenet=True)

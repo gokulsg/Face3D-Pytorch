@@ -1,4 +1,4 @@
-# Face3D: 3D Face Recognition 
+# Face3D: 3D Face Recognition
 
 
 This is a 3D Face Recognizer, a.k.a. 2.5D Face Recognizer in many cases, implemented with `PyTorch`. 
@@ -10,12 +10,12 @@ Given a pair of an RGB image and a depth image, that is, a four-dimensional imag
 The following is a detailed description of the dataset.
 
 ## TODO
-- [ ] Multi-GPU training
-- [ ] Distributed training
-- [ ] Evaluation and prediction script
+- [ ] Data-parallel Multi-GPU training 
+- [ ] Data-parallel distributed training (DDL)
+- [ ] Prediction script
 - [ ] The links of the pretrained models
 
-## Dataset 
+## Dataset
 Dataset is available from [here](http://125.39.136.212:8484/3dvggface2_1.tar.gz).
 
 The data set contains **403,067** pairs of face images of **1208** people. Each pair of face images is registered and contains an RGB image and a depth image.
@@ -41,8 +41,13 @@ Below are some of the trained models and their accuracy on the dataset. **The li
 | Model Name | Accuracy | Architecture | Description |
 | :--------: | :------: | :----------: | :---------: |
 | RGB-D-ResNet50-from-scratch.pkl | 85.11% | RGB-D ResNet50 | <details><summary><i>Training from scratch.</i></summary><ul><li>Take RGB-D images as input, , i.e, 4-channel input.</li></ul></details> |
-| RGB-D-ResNet50-from-imagenet.pkl | 93.68% | RGB-D ResNet50 | <details><summary><i>Pretrained on imagenet.</i></summary><ul><li>Take RGB-D images as input, i.e, 4-channel input. </li><li>Pretrain on imagenet, then fine tune on the RGB-D dataset.</li></ul></details> |
+| [RGB-D-ResNet50-from-imagenet.pkl](https://drive.google.com/open?id=1CIPwX0l5Q5IB_CaitCO-Hvlf67A1c6eg) | 94.64% | RGB-D ResNet50 | <details><summary><i>Pretrained on imagenet.</i></summary><ul><li>Take RGB-D images as input, i.e, 4-channel input. </li><li>Pretrain on imagenet, then fine tune on the RGB-D dataset.</li></ul></details> |
 
+## Install
+
+```bash
+pip install -r requirements
+```
 
 ## Preprocess
 ### Face alignment
@@ -95,13 +100,77 @@ vggface3d
 ### Train with softmax
 Multi-GPU training will be supported soon.
 
-```bash
-python train_softmax.py
+```text
+usage: train_softmax.py [-h] [--train_dataset_csv TRAIN_DATASET_CSV]
+                        [--eval_dataset_csv EVAL_DATASET_CSV]
+                        [--pretrained_on_imagenet]
+                        [--pretrained_model_path PRETRAINED_MODEL_PATH]
+                        [--pretrained_optim_path PRETRAINED_OPTIM_PATH]
+                        [--input_channels INPUT_CHANNELS]
+                        [--num_of_classes NUM_OF_CLASSES]
+                        [--num_of_epochs NUM_OF_EPOCHS]
+                        [--image_size IMAGE_SIZE] [--batch_size BATCH_SIZE]
+                        [--num_of_workers NUM_OF_WORKERS]
+                        [--logs_base_dir LOGS_BASE_DIR]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --train_dataset_csv TRAIN_DATASET_CSV
+                        The path of csv file where to write paths of training
+                        images.
+  --eval_dataset_csv EVAL_DATASET_CSV
+                        The path of csv file where to write paths of
+                        validation images.
+  --pretrained_on_imagenet
+                        (bool) Whether to load the imagenet pretrained model.
+  --pretrained_model_path PRETRAINED_MODEL_PATH
+                        Load a pretrained model before training starts.
+  --pretrained_optim_path PRETRAINED_OPTIM_PATH
+                        Load a optimizer before training starts.
+  --input_channels INPUT_CHANNELS
+                        Number of channels of the first input layer.
+  --num_of_classes NUM_OF_CLASSES
+                        Number of channels of the last output layer.
+  --num_of_epochs NUM_OF_EPOCHS
+                        Number of epochs to run.
+  --image_size IMAGE_SIZE
+                        Image size (height, width) in pixels.
+  --batch_size BATCH_SIZE
+                        Number of images to process in a batch.
+  --num_of_workers NUM_OF_WORKERS
+                        Number of subprocesses to use for data loading.
+  --logs_base_dir LOGS_BASE_DIR
+                        Directory where to write event logs and save models.
 ```
-**Note**: Currently, all the parameters are hard-coding, and the argument parser will be implemented soon.
 
 ## Evaluation
-Available soon.
+
+```text
+usage: evaluation.py [-h] [--test_dataset_csv TEST_DATASET_CSV]
+                     [--pretrained_model_path PRETRAINED_MODEL_PATH]
+                     [--input_channels INPUT_CHANNELS]
+                     [--num_of_classes NUM_OF_CLASSES]
+                     [--image_size IMAGE_SIZE] [--batch_size BATCH_SIZE]
+                     [--num_of_workers NUM_OF_WORKERS]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --test_dataset_csv TEST_DATASET_CSV
+                        The path of csv file where to write paths of test
+                        images.
+  --pretrained_model_path PRETRAINED_MODEL_PATH
+                        The path of the pretrained model.
+  --input_channels INPUT_CHANNELS
+                        Number of channels of the first input layer.
+  --num_of_classes NUM_OF_CLASSES
+                        Number of channels of the last output layer.
+  --image_size IMAGE_SIZE
+                        Image size (height, width) in pixels.
+  --batch_size BATCH_SIZE
+                        Number of images to process in a batch.
+  --num_of_workers NUM_OF_WORKERS
+                        Number of subprocesses to use for data loading.
+```
 
 ## Predict
 Available soon.
