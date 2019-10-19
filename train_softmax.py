@@ -9,6 +9,7 @@ import copy
 from tqdm import tqdm
 
 import torch
+from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from tensorboardX import SummaryWriter
@@ -44,21 +45,23 @@ def train_model(train_dataset, eval_dataset, input_channels, num_of_classes,
                                   num_workers=num_of_workers, drop_last=True)
     eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True,
                                  num_workers=num_of_workers, drop_last=True)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     if num_of_classes is None:
         num_of_classes = train_dataset.get_num_of_classes()
 
     model = ResNet50(input_channels, num_of_classes, pretrained=pretrained_on_imagenet)
 
-    criterion = torch.nn.CrossEntropyLoss()
-    # Observe that only parameters of final layer are being optimized as opposed to before.
+    if torch.cuda.device_count() > 1:
+        model = nn.DataParallel(model)
+    # In `DataParallel` mode, it's to specify the leader to gather parameters
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
+
+    criterion = nn.CrossEntropyLoss()
+    # Observe that only parameters of final layer are being optimized as opposed to before
     optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
     # Decay LR by a factor of 0.1 every 7 epochs
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
-
-    if not os.path.exists(log_base_dir):
-        os.makedirs(log_base_dir)
 
     if (pretrained_model_path is not None) and os.path.exists(pretrained_model_path):
         model.load_state_dict(torch.load(pretrained_model_path, map_location=device))
@@ -69,8 +72,8 @@ def train_model(train_dataset, eval_dataset, input_channels, num_of_classes,
     if (pretrained_optim_path is not None) and os.path.exists(pretrained_optim_path):
         optimizer.load_state_dict(torch.load(pretrained_optim_path, map_location=device))
 
-    model = model.to(device)
-
+    if not os.path.exists(log_base_dir):
+        os.makedirs(log_base_dir)
     log_file = os.path.join(log_base_dir, 'training.log')
     log_fd = open(log_file, 'w')
     log_fd.write(f"""| {"epoch":^8s} | {"epoch_loss":^10s} | {"epoch_accu":^10s} """
