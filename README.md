@@ -12,7 +12,7 @@ The following is a detailed description of the dataset.
 ## TODO
 - [ ] Multi-GPU training
 - [ ] Distributed training
-- [ ] Evaluation and predition script
+- [ ] Evaluation and prediction script
 - [ ] The links of the pretrained models
 
 ## Dataset 

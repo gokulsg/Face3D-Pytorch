@@ -17,7 +17,7 @@ from dataset import Resize, RandomHorizontalFlip
 from models import ResNet50
 
 
-def evaluation(eval_dataset, batch_size=16, num_of_classes=1200, pretrained_model_path=None):
+def evaluation(eval_dataset, batch_size=16, num_of_classes=1200, pretrained_model_path):
     r"""Train a Model
     Args:
         :param eval_dataset: (RGBD_Dataset)
@@ -28,7 +28,6 @@ def evaluation(eval_dataset, batch_size=16, num_of_classes=1200, pretrained_mode
     """
     # If you get such a RuntimeError, change the `num_workers=0` instead.
     # RuntimeError: DataLoader worker (pid 83641) is killed by signal: Unknown signal: 0
-    assert pretrained_model_path is not None
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
 
@@ -92,4 +91,4 @@ if __name__ == '__main__':
                                 input_channels=input_channels,
                                 transform=eval_transform)
 
-    model = evaluation(test_dataset, batch_size=batch_size)
+    model = evaluation(test_dataset, batch_size=batch_size, pretrained_model_path='../log/model.pkl')
