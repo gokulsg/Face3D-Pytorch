@@ -57,7 +57,7 @@ def evaluation(eval_dataset, batch_size=16, num_of_classes=1200, pretrained_mode
         _loss = float(running_loss) / total
         _accu = float(running_corrects) / total * 100
 
-        p_bar.set_description('[EVAL on Epoch #{:d} Loss: {:.4f} Acc: {:.2f}%]'.format(epoch + 1, _loss, _accu))
+        p_bar.set_description('[Evaluation Loss: {:.4f} Acc: {:.2f}%]'.format(_loss, _accu))
         p_bar.update(1)
     p_bar.close()
     acc = float(running_corrects) / total * 100
