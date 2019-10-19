@@ -62,7 +62,7 @@ def evaluation(eval_dataset, pretrained_model_path, batch_size=16, num_of_classe
     loss = float(running_loss) / total
 
     time_elapsed = time.time() - since  # in seconds
-    print('Training complete in {:.0f}m {:.0f}s'.format(
+    print('Evaluation complete in {:.0f}m {:.0f}s'.format(
         time_elapsed // 60, time_elapsed % 60))
     print('Inference Speed: {:2f} fps'.format(total / time_elapsed))
     print('Val Acc: {:4f}, Val loss: {:4f}'.format(acc, loss))
@@ -91,7 +91,6 @@ def parse_arguments(argv):
 
 if __name__ == '__main__':
     args = parse_arguments(sys.argv[1:])
-    args.pretrained_model_path = './RGB-D-ResNet50-from-imagenet.pkl'
     eval_transform = transforms.Compose([
         Resize(args.image_size),
         transforms.ToTensor(),

@@ -38,10 +38,10 @@ I am about to compare the performance of some different classification loss func
 
 Below are some of the trained models and their accuracy on the dataset. **The list will continue to be updated**, please keep your attention.
 
-| Model Name | Accuracy | Architecture | Description |
-| :--------: | :------: | :----------: | :---------: |
-| RGB-D-ResNet50-from-scratch.pkl | 85.11% | RGB-D ResNet50 | <details><summary><i>Training from scratch.</i></summary><ul><li>Take RGB-D images as input, , i.e, 4-channel input.</li></ul></details> |
-| [RGB-D-ResNet50-from-imagenet.pkl](https://drive.google.com/open?id=1CIPwX0l5Q5IB_CaitCO-Hvlf67A1c6eg) | 94.64% | RGB-D ResNet50 | <details><summary><i>Pretrained on imagenet.</i></summary><ul><li>Take RGB-D images as input, i.e, 4-channel input. </li><li>Pretrain on imagenet, then fine tune on the RGB-D dataset.</li></ul></details> |
+| Model Name | Architecture | Accuracy | Description |
+| :--------: | :----------: | :------: | :---------: |
+| [RGB-D-ResNet50-from-scratch.pkl](https://drive.google.com/open?id=1qwbTikrF04mJ4Z170aWefHvpP3yfqJim) | RGB-D ResNet50 | 88.36% | <details><summary><i>Training from scratch.</i></summary><ul><li>Take RGB-D images as input, , i.e, 4-channel input.</li></ul></details> |
+| [RGB-D-ResNet50-from-imagenet.pkl](https://drive.google.com/open?id=1CIPwX0l5Q5IB_CaitCO-Hvlf67A1c6eg) | RGB-D ResNet50 | 94.64% | <details><summary><i>Pretrained on imagenet.</i></summary><ul><li>Take RGB-D images as input, i.e, 4-channel input. </li><li>Pretrain on imagenet, then fine tune on the RGB-D dataset.</li></ul></details> |
 
 ## Install
 
@@ -100,7 +100,19 @@ vggface3d
 ### Train with softmax
 Multi-GPU training will be supported soon.
 
-```text
+```bash
+python train_softmax.py --train_dataset_csv '~/vggface3d_sm/train.csv' \
+	--eval_dataset_csv '~/vggface3d_sm/eval.csv' \
+	--pretrained_on_imagenet \
+	--input_channels 4 \
+  --num_of_classes 1200 \
+  --num_of_epochs 50 \
+	--num_of_workers 8 \
+	--log_base_dir './logs'
+```
+
+<details><summary>Click to see the usage.</summary>
+<pre lang="text">
 usage: train_softmax.py [-h] [--train_dataset_csv TRAIN_DATASET_CSV]
                         [--eval_dataset_csv EVAL_DATASET_CSV]
                         [--pretrained_on_imagenet]
@@ -112,7 +124,6 @@ usage: train_softmax.py [-h] [--train_dataset_csv TRAIN_DATASET_CSV]
                         [--image_size IMAGE_SIZE] [--batch_size BATCH_SIZE]
                         [--num_of_workers NUM_OF_WORKERS]
                         [--logs_base_dir LOGS_BASE_DIR]
-
 optional arguments:
   -h, --help            show this help message and exit
   --train_dataset_csv TRAIN_DATASET_CSV
@@ -141,18 +152,25 @@ optional arguments:
                         Number of subprocesses to use for data loading.
   --logs_base_dir LOGS_BASE_DIR
                         Directory where to write event logs and save models.
-```
+</pre>
+</details>
 
 ## Evaluation
 
-```text
+```bash
+python evaluation.py \
+    --pretrained_model_path ./RGB-D-ResNet50-from-scratch.pkl \
+    --num_of_workers 8
+```
+
+<details><summary>Click to see the usage.</summary>
+<pre lang="text">
 usage: evaluation.py [-h] [--test_dataset_csv TEST_DATASET_CSV]
                      [--pretrained_model_path PRETRAINED_MODEL_PATH]
                      [--input_channels INPUT_CHANNELS]
                      [--num_of_classes NUM_OF_CLASSES]
                      [--image_size IMAGE_SIZE] [--batch_size BATCH_SIZE]
                      [--num_of_workers NUM_OF_WORKERS]
-
 optional arguments:
   -h, --help            show this help message and exit
   --test_dataset_csv TEST_DATASET_CSV
@@ -170,7 +188,7 @@ optional arguments:
                         Number of images to process in a batch.
   --num_of_workers NUM_OF_WORKERS
                         Number of subprocesses to use for data loading.
-```
+</pre></details>
 
 ## Predict
 Available soon.

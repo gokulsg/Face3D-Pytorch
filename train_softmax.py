@@ -74,7 +74,7 @@ def train_model(train_dataset, eval_dataset, input_channels, num_of_classes,
     log_file = os.path.join(log_base_dir, 'training.log')
     log_fd = open(log_file, 'w')
     log_fd.write(f"""| {"epoch":^8s} | {"epoch_loss":^10s} | {"epoch_accu":^10s} """
-                 f"""| {"best_accu":^10s} | {"time_elapsed":^15s} |""")
+                 f"""| {"best_accu":^10s} | {"time_elapsed":^15s} |\n""")
     log_step_interval = 100
 
     since = time.time()
@@ -151,7 +151,7 @@ def train_model(train_dataset, eval_dataset, input_channels, num_of_classes,
 
         time_elapsed = time.time() - since
         log_fd.write(f"""| {epoch:8d} | {epoch_loss:10.2f} | {epoch_accu:9.2f}%"""
-                     f"""| {best_accu:9.2f}% | {time_elapsed//60:7.0f} minutes |""")
+                     f"""| {best_accu:9.2f}% | {time_elapsed//60:7.0f} minutes |\n""")
 
     writer.close()
     log_fd.close()
@@ -192,7 +192,7 @@ def parse_arguments(argv):
     parser.add_argument('--num_of_workers', type=int,
                         help='Number of subprocesses to use for data loading.', default=0)
     parser.add_argument('--logs_base_dir', type=str,
-                        help='Directory where to write event logs and save models.', default='~/logs/')
+                        help='Directory where to write event logs and save models.', default='./logs/')
     return parser.parse_args(argv)
 
 
