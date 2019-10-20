@@ -10,7 +10,7 @@ The following is a detailed description of the dataset.
 
 ## TODO
 
-- [x] Pretrained RGB models (3-channel input)
+- [ ] Pretrained RGB models (3-channel input)
 - [x] Pretrained RGB-D models (4-channel input)
 - [x] Data-parallel Multi-GPU training 
 - [ ] Data-parallel distributed training (DDL)
