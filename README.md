@@ -1,6 +1,5 @@
 # Face3D: 3D Face Recognition
 
-
 This is a 3D Face Recognizer, a.k.a. 2.5D Face Recognizer in many cases, implemented with `PyTorch`. 
 
 Another implementation with tensorflow can be found [there](https://github.com/xingwxiong/Face3D).
@@ -10,15 +9,19 @@ Given a pair of an RGB image and a depth image, that is, a four-dimensional imag
 The following is a detailed description of the dataset.
 
 ## TODO
-- [ ] Data-parallel Multi-GPU training 
+
+- [x] Pretrained RGB models (3-channel input)
+- [x] Pretrained RGB-D models (4-channel input)
+- [x] Data-parallel Multi-GPU training 
 - [ ] Data-parallel distributed training (DDL)
 - [ ] Prediction script
-- [ ] The links of the pretrained models
+- [ ] Training with triplet loss
+- [ ] Face encoder to generate face embedding
 
 ## Dataset
 Dataset is available from [here](http://125.39.136.212:8484/3dvggface2_1.tar.gz).
 
-The data set contains **403,067** pairs of face images of **1208** people. Each pair of face images is registered and contains an RGB image and a depth image.
+The data set contains **403,067** pairs of face images of **1,208** people. Each pair of face images is registered and contains an RGB image and a depth image.
 
 <div style="text-align:center;" align="center">
     <!-- Image Caption Template -->
