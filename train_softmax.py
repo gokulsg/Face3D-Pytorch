@@ -40,7 +40,7 @@ def train_model(train_dataset, eval_dataset, input_channels, num_of_classes,
     """
     # If you get such a RuntimeError, change the `num_workers=0` instead.
     # RuntimeError: DataLoader worker (pid 83641) is killed by signal: Unknown signal: 0
-    print(num_of_workers)
+
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
                                   num_workers=num_of_workers, drop_last=True)
     eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True,
