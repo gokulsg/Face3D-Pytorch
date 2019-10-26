@@ -105,13 +105,13 @@ Multi-GPU training will be supported soon.
 
 ```bash
 python train_softmax.py --train_dataset_csv '~/vggface3d_sm/train.csv' \
-	--eval_dataset_csv '~/vggface3d_sm/eval.csv' \
-	--pretrained_on_imagenet \
-	--input_channels 4 \
+    --eval_dataset_csv '~/vggface3d_sm/eval.csv' \
+    --pretrained_on_imagenet \
+    --input_channels 4 \
     --num_of_classes 1200 \
     --num_of_epochs 50 \
-	--num_of_workers 8 \
-	--log_base_dir './logs'
+    --num_of_workers 8 \
+    --log_base_dir './logs'
 ```
 
 <details><summary>Click to see the usage.</summary>
