@@ -16,12 +16,13 @@ from dataset import Resize, RandomHorizontalFlip
 from models import ResNet50
 
 
-def evaluation(eval_dataset, pretrained_model_path, batch_size=16, num_of_classes=1200):
+def evaluation(eval_dataset, pretrained_model_path, batch_size=16, num_of_workers=0, num_of_classes=1200):
     r"""Evaluation a Model
     Args:
         :param eval_dataset: (RGBD_Dataset)
         :param pretrained_model_path: (str) The path
         :param batch_size: (int) The size of each step. Large batch_size might cause segmentation fault
+        :param num_of_workers: (int) Number of subprocesses to use for data loading.
         :param num_of_classes: (int) how many subprocesses to use for data loading.
         ``0`` means that the data will be loaded in the main process.
         :return: the model of the best accuracy on validation dataset
@@ -29,7 +30,8 @@ def evaluation(eval_dataset, pretrained_model_path, batch_size=16, num_of_classe
     # If you get such a RuntimeError, change the `num_workers=0` instead.
     # RuntimeError: DataLoader worker (pid 83641) is killed by signal: Unknown signal: 0
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=True)
+    eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True,
+                                 num_workers=num_of_workers, drop_last=True)
 
     model = ResNet50(eval_dataset.input_channels, num_of_classes, pretrained=False)
 
@@ -100,5 +102,6 @@ if __name__ == '__main__':
                                 input_channels=args.input_channels,
                                 transform=eval_transform)
 
-    model = evaluation(test_dataset, batch_size=args.batch_size,
-                       pretrained_model_path=args.pretrained_model_path)
+    acc, loss = evaluation(test_dataset, batch_size=args.batch_size,
+                           num_of_workers=args.num_of_workers,
+                           pretrained_model_path=args.pretrained_model_path)

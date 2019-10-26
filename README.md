@@ -41,10 +41,10 @@ I am about to compare the performance of some different classification loss func
 
 Below are some of the trained models and their accuracy on the dataset. **The list will continue to be updated**, please keep your attention.
 
-| Model Name | Architecture | Accuracy | Description |
-| :--------: | :----------: | :------: | :---------: |
-| [RGB-D-ResNet50-from-scratch.pkl](https://drive.google.com/open?id=1qwbTikrF04mJ4Z170aWefHvpP3yfqJim) | RGB-D ResNet50 | 88.36% | <details><summary><i>Training from scratch.</i></summary><ul><li>Take RGB-D images as input, , i.e, 4-channel input.</li></ul></details> |
-| [RGB-D-ResNet50-from-imagenet.pkl](https://drive.google.com/open?id=1CIPwX0l5Q5IB_CaitCO-Hvlf67A1c6eg) | RGB-D ResNet50 | 94.64% | <details><summary><i>Pretrained on imagenet.</i></summary><ul><li>Take RGB-D images as input, i.e, 4-channel input. </li><li>Pretrain on imagenet, then fine tune on the RGB-D dataset.</li></ul></details> |
+| Model Name | Architecture | Accuracy | Descriptions |
+| :--------: | :----------: | :------: | :----------- |
+| [RGB-D-ResNet50-from-scratch.pkl](https://drive.google.com/open?id=1qwbTikrF04mJ4Z170aWefHvpP3yfqJim) | RGB-D ResNet50 | 88.36% | <details><summary><i>Training from scratch.</i></summary><ul><li>Take RGB-D images as input, , i.e, 4-channel input.</li><li>Pretrain on imagenet, then fine tune on the RGB-D dataset.</li><li style="width: 300px;overflow: hidden;white-space: nowrap; text-overflow: ellipsis;" title="649ba97418819bd3ee17f7a1b3ea7daaa8c9557903faf89e9fc51d15f5acc339"><strong>sha256:</strong> 649ba97418819bd3ee17f7a1b3ea7daaa8c9557903faf89e9fc51d15f5acc339</li></ul></details> |
+| [RGB-D-ResNet50-from-imagenet.pkl](https://drive.google.com/open?id=1CIPwX0l5Q5IB_CaitCO-Hvlf67A1c6eg) | RGB-D ResNet50 | 94.64% | <details><summary><i>Pretrained on ImageNet.</i></summary><ul><li>Take RGB-D images as input, i.e, 4-channel input. </li><li style="width: 300px;overflow: hidden;white-space: nowrap; text-overflow: ellipsis;" title="c91482d0332489dd3cbf8418378a878d18d7843fee9835d26f5a3de36f6af931"><strong>sha256:</strong> c91482d0332489dd3cbf8418378a878d18d7843fee9835d26f5a3de36f6af931</li></ul></details> |
 
 ## Install
 
@@ -108,8 +108,8 @@ python train_softmax.py --train_dataset_csv '~/vggface3d_sm/train.csv' \
 	--eval_dataset_csv '~/vggface3d_sm/eval.csv' \
 	--pretrained_on_imagenet \
 	--input_channels 4 \
-  --num_of_classes 1200 \
-  --num_of_epochs 50 \
+    --num_of_classes 1200 \
+    --num_of_epochs 50 \
 	--num_of_workers 8 \
 	--log_base_dir './logs'
 ```
