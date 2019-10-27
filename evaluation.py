@@ -30,7 +30,7 @@ def evaluation(eval_dataset, pretrained_model_path, batch_size=16, num_of_worker
     # If you get such a RuntimeError, change the `num_workers=0` instead.
     # RuntimeError: DataLoader worker (pid 83641) is killed by signal: Unknown signal: 0
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=True,
+    eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=False,
                                  num_workers=num_of_workers, drop_last=True)
 
     model = ResNet50(eval_dataset.input_channels, num_of_classes, pretrained=False)
