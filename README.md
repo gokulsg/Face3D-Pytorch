@@ -43,6 +43,7 @@ Below are some of the trained models and their accuracy on the dataset. **The li
 
 | Model Name | Architecture | Accuracy | Descriptions |
 | :--------: | :----------: | :------: | :----------- |
+| RGB-ResNet50-from-imagenet.pkl | RGB ResNet50 | 94.47% | <details><summary><i>Pretrained on ImageNet.</i></summary><ul><li>Only take RGB images as input, without considering depth images.</li><li>Pretrain on imagenet, then fine tune on the RGB dataset.</li></ul></details> |
 | [RGB-D-ResNet50-from-scratch.pkl](https://drive.google.com/open?id=1qwbTikrF04mJ4Z170aWefHvpP3yfqJim) | RGB-D ResNet50 | 88.36% | <details><summary><i>Training from scratch.</i></summary><ul><li>Take RGB-D images as input, , i.e, 4-channel input.</li><li>Pretrain on imagenet, then fine tune on the RGB-D dataset.</li><li style="width: 300px;overflow: hidden;white-space: nowrap; text-overflow: ellipsis;" title="1694c02b18ba3c55f55593eb385715291e3e0fd7"><strong>SHA1:</strong> 1694c02b18ba3c55f55593eb385715291e3e0fd7</li></ul></details> |
 | [RGB-D-ResNet50-from-imagenet.pkl](https://drive.google.com/open?id=1CIPwX0l5Q5IB_CaitCO-Hvlf67A1c6eg) | RGB-D ResNet50 | 94.64% | <details><summary><i>Pretrained on ImageNet.</i></summary><ul><li>Take RGB-D images as input, i.e, 4-channel input. </li><li style="width: 300px;overflow: hidden;white-space: nowrap; text-overflow: ellipsis;" title="042c9f8e444975b0915d16dccdcb87b55b36e4cb"><strong>SHA1:</strong> 042c9f8e444975b0915d16dccdcb87b55b36e4cb</li></ul></details> |
 

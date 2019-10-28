@@ -35,7 +35,8 @@ def evaluation(eval_dataset, pretrained_model_path, batch_size=16, num_of_worker
 
     model = ResNet50(eval_dataset.input_channels, num_of_classes, pretrained=False)
 
-    if os.path.exists(pretrained_model_path):
+    # if os.path.exists(pretrained_model_path):
+    if (pretrained_model_path is not None) and os.path.exists(pretrained_model_path):
         model.load_state_dict(torch.load(pretrained_model_path, map_location=device))
         print("Model parameters is loaded from {}".format(pretrained_model_path))
     model = model.to(device)

@@ -228,4 +228,6 @@ if __name__ == '__main__':
                         input_channels=args.input_channels, num_of_classes=args.num_of_classes,
                         num_of_epochs=args.num_of_epochs, batch_size=args.batch_size,
                         num_of_workers=args.num_of_workers, log_base_dir=args.logs_base_dir,
-                        pretrained_on_imagenet=True)
+                        pretrained_on_imagenet=True,
+                        pretrained_model_path=args.pretrained_model_path,
+                        pretrained_optim_path=args.pretrained_optim_path)
